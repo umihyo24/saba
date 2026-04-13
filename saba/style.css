@@ -381,6 +381,14 @@ body {
   background: linear-gradient(90deg, #2e9fd6, #73dcff);
 }
 
+.hunger-fill {
+  background: linear-gradient(90deg, #d39c34, #ffd978);
+}
+
+.thirst-fill {
+  background: linear-gradient(90deg, #2f8fd8, #95eeff);
+}
+
 .hud-hp {
   font-size: 0.85rem;
 }
