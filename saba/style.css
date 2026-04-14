@@ -465,6 +465,19 @@ button:hover { background: #4b3f68; }
   background: rgba(5, 15, 24, 0.55);
   width: fit-content;
   border-radius: 6px;
+  cursor: zoom-in;
+}
+
+.minimap.expanded {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(2.4);
+  z-index: 60;
+  box-shadow: 0 20px 42px rgba(0, 0, 0, 0.65);
+  border-color: rgba(160, 210, 240, 0.7);
+  background: rgba(6, 18, 28, 0.95);
+  cursor: zoom-out;
 }
 
 .mini-dot {

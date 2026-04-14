@@ -268,6 +268,7 @@ const gameState = {
     messages: ["ようこそ。"],
     effects: [],
     hoverEnemy: null,
+    minimapExpanded: false,
     statusOpen: false,
     lookCursor: null,
     lastDeathReason: "",
@@ -1094,6 +1095,7 @@ function startTown() {
   gameState.player.stamina = 100;
   gameState.player.facing = { x: 0, y: 1 };
   gameState.ui.lastDeathReason = "";
+  gameState.ui.minimapExpanded = false;
   gameState.ui.statusOpen = false;
   updateHint();
 }
@@ -1145,6 +1147,7 @@ function startDungeonRun(dungeonId = "urayama") {
   };
   gameState.player.facing = { x: 0, y: 1 };
   gameState.ui.statusOpen = false;
+  gameState.ui.minimapExpanded = false;
   gameState.ui.lastDeathReason = "";
   resetLookMode();
   updateFov();
@@ -2317,7 +2320,9 @@ function renderMiniMap(area, cam) {
       dots += `<span class="mini-dot ${kind}${current}"></span>`;
     }
   }
-  return `<div class="minimap" style="grid-template-columns:repeat(${area.width},5px)">${dots}</div>`;
+  const expandedClass = gameState.ui.minimapExpanded ? " expanded" : "";
+  const hint = gameState.ui.minimapExpanded ? "クリックで元に戻す" : "クリックで拡大";
+  return `<div class="minimap${expandedClass}" title="${hint}" style="grid-template-columns:repeat(${area.width},5px)">${dots}</div>`;
 }
 
 function renderArea(area, hint, overlays = "") {
@@ -2440,6 +2445,13 @@ function render() {
 }
 
 if (viewEl) {
+  viewEl.addEventListener("click", (e) => {
+    const miniMapEl = e.target instanceof Element ? e.target.closest(".minimap") : null;
+    if (!miniMapEl || gameState.phase !== "playing") return;
+    gameState.ui.minimapExpanded = !gameState.ui.minimapExpanded;
+    render();
+  });
+
   viewEl.addEventListener("mousemove", (e) => {
     if (gameState.phase !== "playing") return;
     const tile = e.target.closest(".tile[data-map-x][data-map-y]");
