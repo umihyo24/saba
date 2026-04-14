@@ -1,0 +1,146 @@
+.field-shell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.dungeon-stage {
+  width: min(100%, 1280px);
+  height: 100%;
+  margin: 0 auto;
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, max-content) 18px clamp(260px, 24vw, 300px);
+  align-content: start;
+  justify-content: center;
+  align-items: start;
+  gap: 0.6rem;
+}
+
+.stage-main {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  width: min-content;
+  padding: 0.28rem;
+  border: 1px solid rgba(145, 180, 210, 0.28);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(10, 24, 35, 0.88), rgba(6, 18, 28, 0.96));
+}
+
+.board-pane {
+  position: relative;
+  width: fit-content;
+}
+
+.hint-side {
+  font-size: 0.72rem;
+  color: #9f97bb;
+  opacity: 0.9;
+  min-height: 1.1rem;
+  text-align: left;
+  max-width: 34ch;
+  line-height: 1.35;
+}
+
+.projectile-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.projectile {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 1rem;
+  animation: fly-ice 0.35s linear forwards;
+}
+
+@keyframes fly-ice {
+  from { transform: translate(calc(var(--sx) * var(--tile-step) + 12px), calc(var(--sy) * var(--tile-step) + 10px)); opacity: 1; }
+  to { transform: translate(calc(var(--tx) * var(--tile-step) + 12px), calc(var(--ty) * var(--tile-step) + 10px)); opacity: 0.2; }
+}
+
+.damage-float {
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: #ffd2d2;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-shadow: 0 0 4px #000;
+  animation: damage-pop 0.45s ease-out forwards;
+}
+
+@keyframes damage-pop {
+  from { transform: translate(calc(var(--dx) * var(--tile-step) + 14px), calc(var(--dy) * var(--tile-step) + 8px)); opacity: 1; }
+  to { transform: translate(calc(var(--dx) * var(--tile-step) + 14px), calc(var(--dy) * var(--tile-step) - 6px)); opacity: 0; }
+}
+
+.stage-left-panel {
+  position: absolute;
+  left: -250px;
+  top: 0;
+  display: none;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 220px;
+  z-index: 4;
+  pointer-events: auto;
+}
+
+.stage-corner-panel {
+  grid-column: 3 !important;
+  grid-row: 1 !important;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+  min-height: 100%;
+  z-index: 4;
+  pointer-events: auto;
+  overflow: hidden;
+}
+
+/* TODO(refactor): stage-main / stage-corner-panel uses !important and duplicate media guard; clean after click-plane verification. */
+@media (max-width: 980px) {
+  .tile { width: 54px; height: 54px; }
+  .grid-wrap { --tile-step: 57px; }
+  .dungeon-stage {
+    grid-template-columns: minmax(0, max-content) 12px 250px;
+    align-content: start;
+  }
+}
+
+@media (min-width: 761px) {
+  .stage-main { grid-column: 1 !important; grid-row: 1 !important; }
+  .stage-corner-panel { grid-column: 3 !important; grid-row: 1 !important; }
+  .stage-left-panel { display: none !important; pointer-events: none !important; }
+}
+
+@media (max-width: 760px) {
+  .tile { width: 48px; height: 48px; }
+  .grid-wrap { --tile-step: 50px; }
+  .grid { gap: 2px; }
+  .dungeon-stage {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    justify-items: stretch;
+    align-content: start;
+  }
+  .stage-main { grid-column: 1; grid-row: 1; margin-inline: auto; }
+  .stage-corner-panel {
+    grid-column: 1;
+    grid-row: 2;
+    justify-items: stretch;
+    width: 100%;
+    min-height: 0;
+  }
+  .hint-side { max-width: 100%; }
+}

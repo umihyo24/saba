@@ -1,0 +1,63 @@
+import { CONFIG } from "./config.js";
+
+export const gameState = {
+  phase: "town",
+  assets: { images: {}, missing: {}, loaded: false },
+  ui: {
+    messages: ["ようこそ。"],
+    effects: [],
+    minimapExpanded: false,
+    statusOpen: false,
+    lookCursor: null,
+    lastDeathReason: "",
+    effectTimerId: null,
+  },
+  input: {
+    lookMode: false,
+  },
+  town: {
+    level: 0,
+    upgradedVisual: false,
+    map: null,
+    hint: "",
+    oxygenUpgradeLevel: 0,
+  },
+  player: {
+    maxHp: 8,
+    hp: 8,
+    atk: 2,
+    maxPp: 3,
+    pp: 3,
+    reviveUsed: false,
+    facing: { x: 1, y: 0 },
+    inventory: [],
+    maxOxygen: 100,
+    oxygen: 100,
+    hunger: 100,
+    thirst: 100,
+    stamina: 100,
+    breathSteps: 0,
+    fishThisRun: 0,
+    totalFish: 0,
+    level: 1,
+    exp: 0,
+    nextExp: CONFIG.expBaseNext,
+    equipment: [],
+    shieldMods: [],
+  },
+  mission: {
+    targetItemName: "魚",
+    retrieved: false,
+    accepted: false,
+  },
+  meta: {
+    unlocked: {
+      shopkeeper: false,
+      trainerNpc: false,
+      trainingFacility: false,
+    },
+    clearedDungeons: {},
+  },
+  dungeon: null,
+  unidentifiedRunSeed: {},
+};
