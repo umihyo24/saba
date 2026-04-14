@@ -1,0 +1,46 @@
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(1, 6, 11, 0.62);
+  z-index: 20;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.modal-backdrop.is-open {
+  pointer-events: auto;
+  opacity: 1;
+}
+
+.modal-panel {
+  width: min(92vw, 360px);
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.9rem;
+  border: 1px solid rgba(140, 188, 212, 0.8);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(8, 22, 33, 0.98), rgba(11, 30, 42, 0.98));
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
+  pointer-events: auto;
+}
+
+.dungeon-select-modal h3 {
+  margin: 0;
+  font-size: 0.96rem;
+}
+
+.modal-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.38rem;
+}
+
+.independent-debug-shell {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 9999;
+}
