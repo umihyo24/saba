@@ -267,7 +267,6 @@ const gameState = {
   ui: {
     messages: ["ようこそ。"],
     effects: [],
-    hoverEnemy: null,
     minimapExpanded: false,
     statusOpen: false,
     lookCursor: null,
@@ -327,7 +326,7 @@ const gameState = {
 const TEMP_ALLOW_DIRECT_DUNGEON_START = true;
 const DEBUG_UI = false;
 const DEBUG_FLOW = false;
-const DEBUG_CLICK_CAPTURE = true;
+const DEBUG_CLICK_CAPTURE = false;
 
 const hudEl = document.querySelector("#hud");
 const viewEl = document.querySelector("#view");
@@ -1297,17 +1296,6 @@ function canMoveDiagonally(area, fromX, fromY, toX, toY) {
   const sideA = tileAt(area, toX, fromY);
   const sideB = tileAt(area, fromX, toY);
   return sideA !== "wall" && sideB !== "wall";
-}
-
-function enemyBehaviorText(typeId) {
-  const texts = {
-    penguin: "低HP・直線氷弾",
-    penguinBoss: "高耐久・強力な氷弾",
-    cheetah: "高速2歩移動",
-    elephant: "遅いが硬い",
-    hippo: "一撃が重い",
-  };
-  return texts[typeId] || "";
 }
 
 function getObjectTypeDef(type) {
@@ -2303,12 +2291,6 @@ function tileVisual(area, x, y) {
   return { type: "floor", symbol: "", facing: "right" };
 }
 
-function renderEnemyCompact() {
-  const hover = gameState.ui.hoverEnemy;
-  if (!hover) return `<div class="enemy-compact empty">敵: -</div>`;
-  return `<div class="enemy-compact"><strong>${hover.name}</strong><span>HP ${hover.hp} / ATK ${hover.attack}</span></div>`;
-}
-
 // 互換用: 旧UI経路で renderInventoryBox() が呼ばれても落ちないようにする。
 function renderInventoryBox() {
   return "";
@@ -2318,7 +2300,6 @@ function renderBoardSupport(area, cam, hint) {
   return `
     <aside class="stage-corner-panel">
       ${renderMiniMap(area, cam)}
-      ${renderEnemyCompact()}
       <div class="hint-side">${hint || ""}</div>
     </aside>
   `;
@@ -2390,12 +2371,12 @@ function renderBoard(area, cam) {
 }
 
 function renderMiniMap(area, cam) {
-  if (gameState.phase !== "playing") return "";
   let dots = "";
+  const isTown = gameState.phase === "town";
   for (let y = 0; y < area.height; y++) {
     for (let x = 0; x < area.width; x++) {
-      const discovered = isDiscovered(x, y);
       const t = tileAt(area, x, y);
+      const discovered = isTown ? true : isDiscovered(x, y);
       const kind = !discovered ? "unknown" : t === "wall" ? "wall" : t === "water" ? "water" : t === "hole" ? "hole" : "floor";
       const current = x === area.playerPos.x && y === area.playerPos.y ? " player" : "";
       dots += `<span class="mini-dot ${kind}${current}"></span>`;
@@ -2527,7 +2508,6 @@ function render() {
 
 function handleUiAction(action) {
   if (action === "toggle-minimap") {
-    if (gameState.phase !== "playing") return;
     gameState.ui.minimapExpanded = !gameState.ui.minimapExpanded;
     render();
     return;
@@ -2548,39 +2528,6 @@ if (viewEl) {
     handleUiAction(action);
   });
 
-  viewEl.addEventListener("mousemove", (e) => {
-    if (gameState.phase !== "playing") return;
-    const tile = e.target.closest(".tile[data-map-x][data-map-y]");
-    if (!tile) {
-      if (gameState.ui.hoverEnemy) {
-        gameState.ui.hoverEnemy = null;
-        render();
-      }
-      return;
-    }
-    const x = Number(tile.dataset.mapX);
-    const y = Number(tile.dataset.mapY);
-    const enemy = isEnemyVisibleAt(gameState.dungeon.floor, x, y) ? enemyAt(gameState.dungeon.floor, x, y) : null;
-    if (!enemy) {
-      if (gameState.ui.hoverEnemy) {
-        gameState.ui.hoverEnemy = null;
-        render();
-      }
-      return;
-    }
-    const t = getEnemyType(enemy);
-    const nextInfo = { name: t.name, hp: enemy.hp, attack: t.attack, desc: enemyBehaviorText(t.id) };
-    if (JSON.stringify(gameState.ui.hoverEnemy) !== JSON.stringify(nextInfo)) {
-      gameState.ui.hoverEnemy = nextInfo;
-      render();
-    }
-  });
-
-  viewEl.addEventListener("mouseleave", () => {
-    if (!gameState.ui.hoverEnemy) return;
-    gameState.ui.hoverEnemy = null;
-    render();
-  });
 } else {
   console.error("[ui] #view not found; pointer interactions are disabled");
 }
