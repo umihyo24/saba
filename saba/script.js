@@ -267,7 +267,6 @@ const gameState = {
   ui: {
     messages: ["ようこそ。"],
     effects: [],
-    hoverEnemy: null,
     minimapExpanded: false,
     statusOpen: false,
     lookCursor: null,
@@ -1299,17 +1298,6 @@ function canMoveDiagonally(area, fromX, fromY, toX, toY) {
   return sideA !== "wall" && sideB !== "wall";
 }
 
-function enemyBehaviorText(typeId) {
-  const texts = {
-    penguin: "低HP・直線氷弾",
-    penguinBoss: "高耐久・強力な氷弾",
-    cheetah: "高速2歩移動",
-    elephant: "遅いが硬い",
-    hippo: "一撃が重い",
-  };
-  return texts[typeId] || "";
-}
-
 function getObjectTypeDef(type) {
   return OBJECT_TYPES[type] || null;
 }
@@ -2303,12 +2291,6 @@ function tileVisual(area, x, y) {
   return { type: "floor", symbol: "", facing: "right" };
 }
 
-function renderEnemyCompact() {
-  const hover = gameState.ui.hoverEnemy;
-  if (!hover) return `<div class="enemy-compact empty">敵: -</div>`;
-  return `<div class="enemy-compact"><strong>${hover.name}</strong><span>HP ${hover.hp} / ATK ${hover.attack}</span></div>`;
-}
-
 // 互換用: 旧UI経路で renderInventoryBox() が呼ばれても落ちないようにする。
 function renderInventoryBox() {
   return "";
@@ -2318,7 +2300,6 @@ function renderBoardSupport(area, cam, hint) {
   return `
     <aside class="stage-corner-panel">
       ${renderMiniMap(area, cam)}
-      ${renderEnemyCompact()}
       <div class="hint-side">${hint || ""}</div>
     </aside>
   `;
@@ -2547,39 +2528,6 @@ if (viewEl) {
     handleUiAction(action);
   });
 
-  viewEl.addEventListener("mousemove", (e) => {
-    if (gameState.phase !== "playing") return;
-    const tile = e.target.closest(".tile[data-map-x][data-map-y]");
-    if (!tile) {
-      if (gameState.ui.hoverEnemy) {
-        gameState.ui.hoverEnemy = null;
-        render();
-      }
-      return;
-    }
-    const x = Number(tile.dataset.mapX);
-    const y = Number(tile.dataset.mapY);
-    const enemy = isEnemyVisibleAt(gameState.dungeon.floor, x, y) ? enemyAt(gameState.dungeon.floor, x, y) : null;
-    if (!enemy) {
-      if (gameState.ui.hoverEnemy) {
-        gameState.ui.hoverEnemy = null;
-        render();
-      }
-      return;
-    }
-    const t = getEnemyType(enemy);
-    const nextInfo = { name: t.name, hp: enemy.hp, attack: t.attack, desc: enemyBehaviorText(t.id) };
-    if (JSON.stringify(gameState.ui.hoverEnemy) !== JSON.stringify(nextInfo)) {
-      gameState.ui.hoverEnemy = nextInfo;
-      render();
-    }
-  });
-
-  viewEl.addEventListener("mouseleave", () => {
-    if (!gameState.ui.hoverEnemy) return;
-    gameState.ui.hoverEnemy = null;
-    render();
-  });
 } else {
   console.error("[ui] #view not found; pointer interactions are disabled");
 }

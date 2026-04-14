@@ -536,21 +536,6 @@ button:hover { background: #4b3f68; }
   display: none;
 }
 
-.enemy-compact {
-  padding: 4px 6px;
-  border: 1px solid rgba(123, 127, 181, 0.5);
-  border-radius: 7px;
-  background: rgba(8, 20, 30, 0.86);
-  font-size: 0.7rem;
-  line-height: 1.2;
-  display: grid;
-  gap: 2px;
-  min-width: 128px;
-}
-
-.enemy-compact.empty {
-  color: #b5c7d3;
-}
 
 .modal-backdrop {
   position: absolute;
