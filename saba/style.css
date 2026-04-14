@@ -232,6 +232,7 @@ body {
   grid-column: 1;
   grid-row: 1;
   position: relative;
+  z-index: 1;
   width: min-content;
   padding: 0.28rem;
   border: 1px solid rgba(145, 180, 210, 0.28);
@@ -478,12 +479,14 @@ button:hover { background: #4b3f68; }
 .mini-dot.player { background: #9effba; }
 
 .stage-corner-panel {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
   width: 100%;
   min-height: 100%;
-  z-index: 2;
+  z-index: 4;
+  pointer-events: auto;
 }
 
 .enemy-compact {
