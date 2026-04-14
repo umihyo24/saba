@@ -220,6 +220,8 @@ body {
   width: min(100%, 1280px);
   height: 100%;
   margin: 0 auto;
+  position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-columns: minmax(0, max-content) clamp(260px, 24vw, 300px);
   align-content: start;
@@ -232,6 +234,8 @@ body {
   grid-column: 1;
   grid-row: 1;
   position: relative;
+  z-index: 1;
+  overflow: hidden;
   width: min-content;
   padding: 0.28rem;
   border: 1px solid rgba(145, 180, 210, 0.28);
@@ -381,6 +385,14 @@ body {
   background: linear-gradient(90deg, #2e9fd6, #73dcff);
 }
 
+.hunger-fill {
+  background: linear-gradient(90deg, #d39c34, #ffd978);
+}
+
+.thirst-fill {
+  background: linear-gradient(90deg, #2f8fd8, #95eeff);
+}
+
 .hud-hp {
   font-size: 0.85rem;
 }
@@ -470,12 +482,16 @@ button:hover { background: #4b3f68; }
 .mini-dot.player { background: #9effba; }
 
 .stage-corner-panel {
+  grid-column: 2;
+  grid-row: 1;
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
   width: 100%;
   min-height: 100%;
-  z-index: 2;
+  z-index: 4;
+  pointer-events: auto;
 }
 
 .enemy-compact {
@@ -659,6 +675,8 @@ button:hover { background: #4b3f68; }
     align-content: start;
   }
   .stage-corner-panel {
+    grid-column: 1;
+    grid-row: 2;
     justify-items: stretch;
     width: 100%;
     min-height: 0;
