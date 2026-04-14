@@ -229,6 +229,7 @@ body {
   justify-content: center;
   align-items: start;
   gap: 0.6rem;
+  outline: 1px dashed rgba(80, 180, 220, 0.32); /* debug: stage frame */
 }
 
 .stage-main {
@@ -242,6 +243,7 @@ body {
   border: 1px solid rgba(145, 180, 210, 0.28);
   border-radius: 14px;
   background: linear-gradient(180deg, rgba(10, 24, 35, 0.88), rgba(6, 18, 28, 0.96));
+  outline: 1px dashed rgba(120, 255, 180, 0.35); /* debug: board layer */
 }
 
 .board-pane {
@@ -457,6 +459,7 @@ button:hover { background: #4b3f68; }
   gap: 6px;
   z-index: 5;
   pointer-events: auto;
+  outline: 1px dashed rgba(255, 190, 90, 0.5); /* debug: overlay hit area */
 }
 
 .minimap {
@@ -527,6 +530,7 @@ button:hover { background: #4b3f68; }
   min-height: 100%;
   z-index: 4;
   pointer-events: auto;
+  outline: 1px dashed rgba(255, 140, 190, 0.4); /* debug: side panel layer */
 }
 
 .enemy-compact {
@@ -556,6 +560,7 @@ button:hover { background: #4b3f68; }
   /* Hidden by default: do not steal clicks unless explicitly opened with .is-open */
   pointer-events: none;
   opacity: 0;
+  outline: 1px dashed rgba(255, 120, 120, 0.35); /* debug: modal layer */
 }
 
 .modal-backdrop.is-open {
