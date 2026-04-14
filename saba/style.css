@@ -460,12 +460,16 @@ button:hover { background: #4b3f68; }
 .minimap {
   display: grid;
   gap: 1px;
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
   padding: 4px;
   border: 1px solid rgba(145, 175, 210, 0.2);
   background: rgba(5, 15, 24, 0.55);
   width: fit-content;
   border-radius: 6px;
   cursor: zoom-in;
+  line-height: 0;
 }
 
 .minimap.expanded {
@@ -478,6 +482,10 @@ button:hover { background: #4b3f68; }
   border-color: rgba(160, 210, 240, 0.7);
   background: rgba(6, 18, 28, 0.95);
   cursor: zoom-out;
+}
+
+.minimap:hover {
+  background: rgba(6, 18, 28, 0.72);
 }
 
 .mini-dot {
