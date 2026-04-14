@@ -223,7 +223,8 @@ body {
   position: relative;
   isolation: isolate;
   display: grid;
-  grid-template-columns: clamp(220px, 20vw, 280px) minmax(0, max-content) clamp(260px, 24vw, 300px);
+  /* Desktop: board | spacer | side-panel. Keep panels in separate grid cells to prevent overlap click loss. */
+  grid-template-columns: minmax(0, max-content) 18px clamp(260px, 24vw, 300px);
   align-content: start;
   justify-content: center;
   align-items: start;
@@ -455,6 +456,7 @@ button:hover { background: #4b3f68; }
   display: grid;
   gap: 6px;
   z-index: 5;
+  pointer-events: auto;
 }
 
 .minimap {
@@ -515,7 +517,7 @@ button:hover { background: #4b3f68; }
 }
 
 .stage-corner-panel {
-  grid-column: 2;
+  grid-column: 3;
   grid-row: 1;
   position: relative;
   display: flex;
@@ -551,7 +553,14 @@ button:hover { background: #4b3f68; }
   justify-content: center;
   background: rgba(1, 6, 11, 0.62);
   z-index: 20;
+  /* Hidden by default: do not steal clicks unless explicitly opened with .is-open */
+  pointer-events: none;
+  opacity: 0;
+}
+
+.modal-backdrop.is-open {
   pointer-events: auto;
+  opacity: 1;
 }
 
 .modal-panel {
@@ -593,7 +602,7 @@ button:hover { background: #4b3f68; }
     --tile-step: 57px;
   }
   .dungeon-stage {
-    grid-template-columns: 220px minmax(0, max-content) 250px;
+    grid-template-columns: minmax(0, max-content) 12px 250px;
     align-content: start;
   }
 }
