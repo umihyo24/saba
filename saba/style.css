@@ -243,7 +243,7 @@ body {
   border: 1px solid rgba(145, 180, 210, 0.28);
   border-radius: 14px;
   background: linear-gradient(180deg, rgba(10, 24, 35, 0.88), rgba(6, 18, 28, 0.96));
-  outline: 1px dashed rgba(120, 255, 180, 0.35); /* debug: board layer */
+  outline: 2px solid lime; /* debug: board layer */
 }
 
 .board-pane {
@@ -459,7 +459,7 @@ button:hover { background: #4b3f68; }
   gap: 6px;
   z-index: 5;
   pointer-events: auto;
-  outline: 1px dashed rgba(255, 190, 90, 0.5); /* debug: overlay hit area */
+  outline: 2px solid cyan; /* debug: overlay hit area */
 }
 
 .minimap {
@@ -530,7 +530,12 @@ button:hover { background: #4b3f68; }
   min-height: 100%;
   z-index: 4;
   pointer-events: auto;
-  outline: 1px dashed rgba(255, 140, 190, 0.4); /* debug: side panel layer */
+  outline: 2px solid red; /* debug: side panel layer */
+}
+
+.stage-left-panel {
+  display: none;
+  outline: 2px solid yellow; /* debug: disabled stale layer */
 }
 
 .enemy-compact {
