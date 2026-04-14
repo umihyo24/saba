@@ -2243,6 +2243,7 @@ function renderBoardSupport(area, cam, hint) {
 function renderBoardStage(area, cam, hint) {
   return `
     <div class="dungeon-stage">
+      ${renderBoardLeftSupport()}
       <div class="stage-main">
         ${renderBoard(area, cam)}
       </div>
