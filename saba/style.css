@@ -220,23 +220,30 @@ body {
   width: min(100%, 1280px);
   height: 100%;
   margin: 0 auto;
+  position: relative;
+  isolation: isolate;
   display: grid;
-  grid-template-columns: minmax(0, max-content) clamp(260px, 24vw, 300px);
+  /* Desktop: board | spacer | side-panel. Keep panels in separate grid cells to prevent overlap click loss. */
+  grid-template-columns: minmax(0, max-content) 18px clamp(260px, 24vw, 300px);
   align-content: start;
   justify-content: center;
   align-items: start;
   gap: 0.6rem;
+  outline: 1px dashed rgba(80, 180, 220, 0.32); /* debug: stage frame */
 }
 
 .stage-main {
   grid-column: 1;
   grid-row: 1;
   position: relative;
+  z-index: 1;
+  overflow: hidden;
   width: min-content;
   padding: 0.28rem;
   border: 1px solid rgba(145, 180, 210, 0.28);
   border-radius: 14px;
   background: linear-gradient(180deg, rgba(10, 24, 35, 0.88), rgba(6, 18, 28, 0.96));
+  outline: 1px dashed rgba(120, 255, 180, 0.35); /* debug: board layer */
 }
 
 .board-pane {
@@ -381,6 +388,14 @@ body {
   background: linear-gradient(90deg, #2e9fd6, #73dcff);
 }
 
+.hunger-fill {
+  background: linear-gradient(90deg, #d39c34, #ffd978);
+}
+
+.thirst-fill {
+  background: linear-gradient(90deg, #2f8fd8, #95eeff);
+}
+
 .hud-hp {
   font-size: 0.85rem;
 }
@@ -443,16 +458,39 @@ button:hover { background: #4b3f68; }
   display: grid;
   gap: 6px;
   z-index: 5;
+  pointer-events: auto;
+  outline: 1px dashed rgba(255, 190, 90, 0.5); /* debug: overlay hit area */
 }
 
 .minimap {
   display: grid;
   gap: 1px;
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
   padding: 4px;
   border: 1px solid rgba(145, 175, 210, 0.2);
   background: rgba(5, 15, 24, 0.55);
   width: fit-content;
   border-radius: 6px;
+  cursor: zoom-in;
+  line-height: 0;
+}
+
+.minimap.expanded {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(2.4);
+  z-index: 60;
+  box-shadow: 0 20px 42px rgba(0, 0, 0, 0.65);
+  border-color: rgba(160, 210, 240, 0.7);
+  background: rgba(6, 18, 28, 0.95);
+  cursor: zoom-out;
+}
+
+.minimap:hover {
+  background: rgba(6, 18, 28, 0.72);
 }
 
 .mini-dot {
@@ -470,12 +508,17 @@ button:hover { background: #4b3f68; }
 .mini-dot.player { background: #9effba; }
 
 .stage-corner-panel {
+  grid-column: 3;
+  grid-row: 1;
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
   width: 100%;
   min-height: 100%;
-  z-index: 2;
+  z-index: 4;
+  pointer-events: auto;
+  outline: 1px dashed rgba(255, 140, 190, 0.4); /* debug: side panel layer */
 }
 
 .enemy-compact {
@@ -494,95 +537,6 @@ button:hover { background: #4b3f68; }
   color: #b5c7d3;
 }
 
-.inventory-box {
-  display: grid;
-  gap: 0.3rem;
-  padding: 0.3rem 0.35rem;
-  border: 1px solid rgba(126, 145, 165, 0.28);
-  border-radius: 9px;
-  background: rgba(7, 17, 25, 0.75);
-}
-
-.inventory-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 0.4rem;
-}
-
-.inventory-label {
-  font-size: 0.76rem;
-  color: #d4dbe9;
-  font-weight: 700;
-}
-
-.inventory-count {
-  font-size: 0.7rem;
-  color: #abc4d7;
-}
-
-.inventory-list {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.25rem;
-}
-
-.inventory-entry {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 2.7rem 1.6rem 1fr auto;
-  align-items: center;
-  gap: 0.3rem;
-  border: 1px solid #726998;
-  border-radius: 7px;
-  background: rgba(20, 17, 30, 0.9);
-  min-height: 28px;
-  font-size: 0.74rem;
-  color: #fff;
-  padding: 0.14rem 0.38rem;
-  text-align: left;
-}
-
-.inventory-entry.empty {
-  border-color: rgba(124, 133, 150, 0.55);
-  background: rgba(12, 16, 22, 0.55);
-  color: #8f9aaa;
-}
-
-.inventory-entry:hover {
-  background: #3f3558;
-}
-
-.slot-index {
-  color: #acbad3;
-  font-variant-numeric: tabular-nums;
-}
-
-.slot-icon {
-  text-align: center;
-}
-
-.slot-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.slot-state {
-  color: #9cf0a7;
-  font-size: 0.68rem;
-}
-
-.phase-actions {
-  position: relative;
-  z-index: 6;
-  display: flex;
-  justify-content: center;
-  gap: 0.35rem;
-  flex-wrap: wrap;
-  margin-top: 0.45rem;
-}
-
 .modal-backdrop {
   position: absolute;
   inset: 0;
@@ -591,7 +545,15 @@ button:hover { background: #4b3f68; }
   justify-content: center;
   background: rgba(1, 6, 11, 0.62);
   z-index: 20;
+  /* Hidden by default: do not steal clicks unless explicitly opened with .is-open */
+  pointer-events: none;
+  opacity: 0;
+  outline: 1px dashed rgba(255, 120, 120, 0.35); /* debug: modal layer */
+}
+
+.modal-backdrop.is-open {
   pointer-events: auto;
+  opacity: 1;
 }
 
 .modal-panel {
@@ -633,11 +595,8 @@ button:hover { background: #4b3f68; }
     --tile-step: 57px;
   }
   .dungeon-stage {
-    grid-template-columns: minmax(0, max-content) 250px;
+    grid-template-columns: minmax(0, max-content) 12px 250px;
     align-content: start;
-  }
-  .inventory-list {
-    grid-template-columns: 1fr;
   }
 }
 
@@ -658,15 +617,19 @@ button:hover { background: #4b3f68; }
     justify-items: stretch;
     align-content: start;
   }
+  .stage-main {
+    grid-column: 1;
+    grid-row: 1;
+    margin-inline: auto;
+  }
   .stage-corner-panel {
+    grid-column: 1;
+    grid-row: 2;
     justify-items: stretch;
     width: 100%;
     min-height: 0;
   }
   .hint-side {
     max-width: 100%;
-  }
-  .inventory-list {
-    grid-template-columns: 1fr;
   }
 }
