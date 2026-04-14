@@ -612,6 +612,22 @@ button:hover { background: #4b3f68; }
   }
 }
 
+/* Desktop hard-guard: prevent stale rules/old injected panels from breaking click planes. */
+@media (min-width: 761px) {
+  .stage-main {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+  }
+  .stage-corner-panel {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+  }
+  .stage-left-panel {
+    display: none !important;
+    pointer-events: none !important;
+  }
+}
+
 @media (max-width: 760px) {
   .tile {
     width: 48px;
