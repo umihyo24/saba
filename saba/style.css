@@ -565,7 +565,7 @@ button:hover { background: #4b3f68; }
   /* Hidden by default: do not steal clicks unless explicitly opened with .is-open */
   pointer-events: none;
   opacity: 0;
-  outline: 1px dashed rgba(255, 120, 120, 0.35); /* debug: modal layer */
+  outline: 2px solid magenta; /* debug: modal layer */
 }
 
 .modal-backdrop.is-open {
