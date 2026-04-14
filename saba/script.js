@@ -2225,51 +2225,12 @@ function renderEnemyCompact() {
   return `<div class="enemy-compact"><strong>${hover.name}</strong><span>HP ${hover.hp} / ATK ${hover.attack}</span></div>`;
 }
 
-function renderInventoryEntry(slot, idx) {
-  const slotLabel = String(idx + 1).padStart(2, "0");
-  if (!slot) {
-    return `
-      <div class="inventory-entry empty" data-slot-index="${idx}">
-        <span class="slot-index">#${slotLabel}</span>
-        <span class="slot-icon">—</span>
-        <span class="slot-label">空きスロット</span>
-      </div>
-    `;
-  }
-  const equipped = isEquipped(slot.type);
-  return `
-    <button data-slot-index="${idx}" class="inventory-entry" title="アイテムを使う">
-      <span class="slot-index">#${slotLabel}</span>
-      <span class="slot-icon">${slot.emoji || "🎒"}</span>
-      <span class="slot-label">${slot.name}</span>
-      <span class="slot-state">${equipped ? "装備中" : ""}</span>
-    </button>
-  `;
-}
-
-function renderInventoryBox() {
-  const slots = gameState.player.inventory.slice(0, CONFIG.inventorySlots);
-  while (slots.length < CONFIG.inventorySlots) slots.push(null);
-  const slotsHtml = slots.map((slot, idx) => renderInventoryEntry(slot, idx)).join("");
-  const carryCount = slots.filter(Boolean).length;
-  return `
-    <div class="inventory-box">
-      <div class="inventory-head">
-        <span class="inventory-label">インベントリ</span>
-        <span class="inventory-count">${carryCount}/${CONFIG.inventorySlots} / ${carryingWeight()}kg</span>
-      </div>
-      <div class="inventory-list">${slotsHtml}</div>
-    </div>
-  `;
-}
-
 function renderBoardSupport(area, cam, hint) {
   return `
     <aside class="stage-corner-panel">
       ${renderMiniMap(area, cam)}
       ${renderEnemyCompact()}
       <div class="hint-side">${hint || ""}</div>
-      ${renderInventoryBox()}
     </aside>
   `;
 }
@@ -2471,49 +2432,11 @@ function render() {
 
   if (gameState.phase === "gameover") {
     viewEl.className = "";
-    viewEl.innerHTML = `<div class="field-shell"><h2>ゲームオーバー</h2><p>再挑戦しますか？</p><div class="phase-actions"><button data-action='RESTART'>町へ戻る</button></div></div>`;
+    viewEl.innerHTML = `<div class="field-shell"><h2>ゲームオーバー</h2><p>Rキーで町へ戻る</p></div>`;
   }
 
   renderMessageBox();
 }
-
-function findInteractiveTarget(e, selector) {
-  const direct = e.target instanceof Element ? e.target.closest(selector) : null;
-  debugUi("click target", {
-    selector,
-    type: e.type,
-    targetTag: e.target && e.target.nodeName ? e.target.nodeName : typeof e.target,
-    hasDirect: !!direct,
-    client: [e.clientX, e.clientY],
-  });
-  if (direct) return direct;
-  if (typeof e.clientX !== "number" || typeof e.clientY !== "number") return null;
-  const stack = document.elementsFromPoint(e.clientX, e.clientY);
-  debugUi(
-    "elementsFromPoint",
-    stack.slice(0, 5).map((el) => {
-      const tag = el.tagName ? el.tagName.toLowerCase() : "unknown";
-      const id = el.id ? `#${el.id}` : "";
-      const cls = el.className ? `.${String(el.className).trim().replace(/\s+/g, ".")}` : "";
-      return `${tag}${id}${cls}`;
-    })
-  );
-  return stack.find((el) => el instanceof HTMLElement && el.matches(selector)) || null;
-}
-
-document.addEventListener("click", (e) => {
-  const btn = findInteractiveTarget(e, "button[data-action]");
-  debugUi("action click resolved", { found: !!btn, action: btn?.dataset?.action || null });
-  if (!btn) return;
-  dispatch(btn.dataset.action, { style: btn.dataset.style, dungeon: btn.dataset.dungeon });
-  return true;
-});
-
-document.addEventListener("click", (e) => {
-  const slotBtn = findInteractiveTarget(e, "[data-slot-index]");
-  if (!slotBtn) return;
-  dispatch("USE_ITEM", { index: Number(slotBtn.dataset.slotIndex), consumeTurn: true });
-});
 
 if (viewEl) {
   viewEl.addEventListener("mousemove", (e) => {
@@ -2601,6 +2524,10 @@ window.addEventListener("keydown", (e) => {
   if ((e.key === "v" || e.key === "V") && gameState.phase === "playing") {
     e.preventDefault();
     dispatch("UPGRADE_GEAR");
+  }
+  if ((e.key === "r" || e.key === "R") && gameState.phase === "gameover") {
+    e.preventDefault();
+    dispatch("RESTART");
   }
 });
 

@@ -522,95 +522,6 @@ button:hover { background: #4b3f68; }
   color: #b5c7d3;
 }
 
-.inventory-box {
-  display: grid;
-  gap: 0.3rem;
-  padding: 0.3rem 0.35rem;
-  border: 1px solid rgba(126, 145, 165, 0.28);
-  border-radius: 9px;
-  background: rgba(7, 17, 25, 0.75);
-}
-
-.inventory-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 0.4rem;
-}
-
-.inventory-label {
-  font-size: 0.76rem;
-  color: #d4dbe9;
-  font-weight: 700;
-}
-
-.inventory-count {
-  font-size: 0.7rem;
-  color: #abc4d7;
-}
-
-.inventory-list {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.25rem;
-}
-
-.inventory-entry {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 2.7rem 1.6rem 1fr auto;
-  align-items: center;
-  gap: 0.3rem;
-  border: 1px solid #726998;
-  border-radius: 7px;
-  background: rgba(20, 17, 30, 0.9);
-  min-height: 28px;
-  font-size: 0.74rem;
-  color: #fff;
-  padding: 0.14rem 0.38rem;
-  text-align: left;
-}
-
-.inventory-entry.empty {
-  border-color: rgba(124, 133, 150, 0.55);
-  background: rgba(12, 16, 22, 0.55);
-  color: #8f9aaa;
-}
-
-.inventory-entry:hover {
-  background: #3f3558;
-}
-
-.slot-index {
-  color: #acbad3;
-  font-variant-numeric: tabular-nums;
-}
-
-.slot-icon {
-  text-align: center;
-}
-
-.slot-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.slot-state {
-  color: #9cf0a7;
-  font-size: 0.68rem;
-}
-
-.phase-actions {
-  position: relative;
-  z-index: 6;
-  display: flex;
-  justify-content: center;
-  gap: 0.35rem;
-  flex-wrap: wrap;
-  margin-top: 0.45rem;
-}
-
 .modal-backdrop {
   position: absolute;
   inset: 0;
@@ -664,13 +575,6 @@ button:hover { background: #4b3f68; }
     grid-template-columns: 220px minmax(0, max-content) 250px;
     align-content: start;
   }
-  .stage-left-panel {
-    left: -230px;
-    width: 200px;
-  }
-  .inventory-list {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 760px) {
@@ -690,9 +594,6 @@ button:hover { background: #4b3f68; }
     justify-items: stretch;
     align-content: start;
   }
-  .stage-left-panel {
-    display: none;
-  }
   .stage-main {
     grid-column: 1;
     grid-row: 1;
@@ -707,8 +608,5 @@ button:hover { background: #4b3f68; }
   }
   .hint-side {
     max-width: 100%;
-  }
-  .inventory-list {
-    grid-template-columns: 1fr;
   }
 }
