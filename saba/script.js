@@ -2240,6 +2240,11 @@ function renderBoardSupport(area, cam, hint) {
   `;
 }
 
+// 互換用: 旧テンプレートで呼ばれても落ちないようにする。
+function renderBoardLeftSupport() {
+  return "";
+}
+
 function renderBoardStage(area, cam, hint) {
   return `
     <div class="dungeon-stage">
