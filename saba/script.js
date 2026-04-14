@@ -2274,9 +2274,19 @@ function renderBoardSupport(area, cam, hint) {
   `;
 }
 
+function renderBoardLeftSupport() {
+  return `
+    <aside class="stage-left-panel">
+      <div class="hint-side">左側テスト用インベントリ</div>
+      ${renderInventoryBox()}
+    </aside>
+  `;
+}
+
 function renderBoardStage(area, cam, hint) {
   return `
     <div class="dungeon-stage">
+      ${renderBoardLeftSupport()}
       <div class="stage-main">
         ${renderBoard(area, cam)}
       </div>
