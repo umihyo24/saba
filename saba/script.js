@@ -2225,21 +2225,17 @@ function renderEnemyCompact() {
   return `<div class="enemy-compact"><strong>${hover.name}</strong><span>HP ${hover.hp} / ATK ${hover.attack}</span></div>`;
 }
 
+// 互換用: 旧UI経路で renderInventoryBox() が呼ばれても落ちないようにする。
+function renderInventoryBox() {
+  return "";
+}
+
 function renderBoardSupport(area, cam, hint) {
   return `
     <aside class="stage-corner-panel">
       ${renderMiniMap(area, cam)}
       ${renderEnemyCompact()}
       <div class="hint-side">${hint || ""}</div>
-    </aside>
-  `;
-}
-
-function renderBoardLeftSupport() {
-  return `
-    <aside class="stage-left-panel">
-      <div class="hint-side">左側テスト用インベントリ</div>
-      ${renderInventoryBox()}
     </aside>
   `;
 }
