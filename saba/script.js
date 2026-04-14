@@ -12,11 +12,15 @@ const CONFIG = {
   logLimit: 6,
   lungCapacity: 10,
   inventorySlots: 12,
+  carryWeightLimit: 28,
   fishUpgradeBase: 8,
   levelUpHpGain: 1,
   levelUpAtkEvery: 3,
   expBaseNext: 5,
   pressureEveryTurns: 8,
+  hungerTickTurns: 3,
+  thirstTickTurns: 2,
+  staminaRecoverPerTurn: 1,
   projectileEffectMs: 420,
   damageEffectMs: 550,
   effectTickMs: 80,
@@ -105,6 +109,37 @@ const ENEMY_TYPES = {
   elephant: { id: "elephant", name: "ゾウ", emoji: "🦣", maxHp: 6, attack: 1, behavior: "slow", actEvery: 2, exp: 6 },
   hippo: { id: "hippo", name: "カバ", emoji: "🦛", maxHp: 4, attack: 2, behavior: "heavy", exp: 5, swimmer: true },
 };
+
+const ITEM_DEFS = {
+  H: { emoji: "🌿", name: "薬草", weight: 1, category: "food" },
+  OXY: { emoji: "🫧", name: "酸素ボンベ", weight: 2, category: "tool" },
+  F_SMALL: { emoji: "🐟", name: "小魚", weight: 1, category: "food" },
+  F_BIG: { emoji: "🐠", name: "大魚", weight: 2, category: "food" },
+  TENGU: { emoji: "💪", name: "テングのチカラ", weight: 2, category: "tool" },
+  MIZU: { emoji: "💪", name: "みずぐものちから", weight: 2, category: "tool" },
+  FRUIT: { emoji: "🍎", name: "果実", weight: 1, category: "food" },
+  BERRY: { emoji: "🫐", name: "きのみ", weight: 1, category: "food" },
+  MUSHROOM_UNKNOWN: { emoji: "🍄", name: "粉が出るキノコ", weight: 1, category: "food" },
+  HERB: { emoji: "🌱", name: "草", weight: 1, category: "food" },
+  WOOD: { emoji: "🪵", name: "木材", weight: 2, category: "material" },
+  VINE: { emoji: "🪢", name: "つた", weight: 1, category: "material" },
+  STONE: { emoji: "🪨", name: "石", weight: 2, category: "material" },
+  BONE: { emoji: "🦴", name: "骨", weight: 1, category: "material" },
+  HIDE: { emoji: "🧥", name: "皮", weight: 2, category: "material" },
+  SAP: { emoji: "💧", name: "樹液", weight: 1, category: "material" },
+  RESIN: { emoji: "🧪", name: "樹脂", weight: 1, category: "material" },
+  TINDER: { emoji: "🪹", name: "ほぐち", weight: 1, category: "tool" },
+  FIRESTARTER: { emoji: "🔥", name: "火起こし器", weight: 2, category: "tool" },
+  FLINT: { emoji: "✨", name: "火打石", weight: 1, category: "tool" },
+  KNIFE: { emoji: "🔪", name: "ナイフ", weight: 1, category: "tool" },
+  WHIP: { emoji: "🪢", name: "ムチ", weight: 2, category: "tool" },
+};
+
+const CRAFT_RECIPES = [
+  { out: "WHIP", name: "ムチ", needs: ["WOOD", "VINE"] },
+  { out: "TINDER", name: "ほぐち", needs: ["HERB"] },
+  { out: "RESIN", name: "樹脂", needs: ["SAP"], requiresFire: true },
+];
 
 const OBJECT_TYPES = {
   T: {
@@ -233,6 +268,7 @@ const gameState = {
     messages: ["ようこそ。"],
     effects: [],
     hoverEnemy: null,
+    minimapExpanded: false,
     statusOpen: false,
     lookCursor: null,
     lastDeathReason: "",
@@ -259,6 +295,9 @@ const gameState = {
     inventory: [],
     maxOxygen: 100,
     oxygen: 100,
+    hunger: 100,
+    thirst: 100,
+    stamina: 100,
     breathSteps: 0,
     fishThisRun: 0,
     totalFish: 0,
@@ -266,6 +305,7 @@ const gameState = {
     exp: 0,
     nextExp: CONFIG.expBaseNext,
     equipment: [],
+    shieldMods: [],
   },
   mission: {
     targetItemName: "魚",
@@ -281,11 +321,13 @@ const gameState = {
     clearedDungeons: {},
   },
   dungeon: null,
+  unidentifiedRunSeed: {},
 };
 
 const TEMP_ALLOW_DIRECT_DUNGEON_START = true;
 const DEBUG_UI = false;
 const DEBUG_FLOW = false;
+const DEBUG_CLICK_CAPTURE = true;
 
 const hudEl = document.querySelector("#hud");
 const viewEl = document.querySelector("#view");
@@ -317,6 +359,86 @@ function debugFlow(...args) {
   console.debug("[flow-debug]", ...args);
 }
 
+function debugClickCapture(e) {
+  if (!DEBUG_CLICK_CAPTURE || !(e.target instanceof Element)) return;
+  const pointX = typeof e.clientX === "number" ? e.clientX : -1;
+  const pointY = typeof e.clientY === "number" ? e.clientY : -1;
+  const atPoint = pointX >= 0 && pointY >= 0 ? document.elementFromPoint(pointX, pointY) : null;
+  const path = typeof e.composedPath === "function" ? e.composedPath() : [];
+  const actionEl = e.target.closest("[data-ui-action]");
+  const buttonEl = e.target.closest("button");
+  const overlays = {
+    statusOverlay: !!document.querySelector(".status-overlay"),
+    modalBackdrop: !!document.querySelector(".modal-backdrop"),
+    modalBackdropOpen: !!document.querySelector(".modal-backdrop.is-open"),
+  };
+  const selectors = [
+    "#view",
+    ".dungeon-stage",
+    ".stage-main",
+    ".stage-corner-panel",
+    ".stage-left-panel",
+    ".status-overlay",
+    ".modal-backdrop",
+  ];
+  const rows = selectors.map((selector) => {
+    const el = document.querySelector(selector);
+    if (!el) return { selector, exists: false };
+    const rect = el.getBoundingClientRect();
+    const st = getComputedStyle(el);
+    return {
+      selector,
+      exists: true,
+      left: Math.round(rect.left),
+      top: Math.round(rect.top),
+      width: Math.round(rect.width),
+      height: Math.round(rect.height),
+      zIndex: st.zIndex,
+      pointerEvents: st.pointerEvents,
+      display: st.display,
+      visibility: st.visibility,
+      opacity: st.opacity,
+    };
+  });
+
+  const stageMain = document.querySelector(".stage-main");
+  const sidePanel = document.querySelector(".stage-corner-panel");
+  const leftPanel = document.querySelector(".stage-left-panel");
+  const statusOverlay = document.querySelector(".status-overlay");
+  const modalBackdrop = document.querySelector(".modal-backdrop");
+
+  console.groupCollapsed("[click-debug] view click");
+  console.log("target:", e.target);
+  console.log("composedPath:", path);
+  console.log("closest [data-ui-action]:", actionEl);
+  console.log("closest button:", buttonEl);
+  console.log("click point:", { x: pointX, y: pointY });
+  console.log("overlays:", overlays);
+  console.log("elementFromPoint:", atPoint);
+  console.table(rows);
+  console.log("computed stage-main:", stageMain ? {
+    gridColumnStart: getComputedStyle(stageMain).gridColumnStart,
+    gridColumnEnd: getComputedStyle(stageMain).gridColumnEnd,
+  } : null);
+  console.log("computed stage-corner-panel:", sidePanel ? {
+    gridColumnStart: getComputedStyle(sidePanel).gridColumnStart,
+    gridColumnEnd: getComputedStyle(sidePanel).gridColumnEnd,
+  } : null);
+  console.log("computed stage-left-panel:", leftPanel ? {
+    display: getComputedStyle(leftPanel).display,
+    pointerEvents: getComputedStyle(leftPanel).pointerEvents,
+  } : null);
+  console.log("computed status-overlay:", statusOverlay ? {
+    display: getComputedStyle(statusOverlay).display,
+    pointerEvents: getComputedStyle(statusOverlay).pointerEvents,
+  } : null);
+  console.log("computed modal-backdrop:", modalBackdrop ? {
+    pointerEvents: getComputedStyle(modalBackdrop).pointerEvents,
+    opacity: getComputedStyle(modalBackdrop).opacity,
+  } : null);
+  console.groupEnd();
+}
+
 function addLog(msg) {
   gameState.ui.messages.unshift(msg);
   gameState.ui.messages = gameState.ui.messages.slice(0, CONFIG.logLimit);
@@ -329,6 +451,40 @@ function setGameOver(message) {
 
 function ensureInventorySize() {
   while (gameState.player.inventory.length < CONFIG.inventorySlots) gameState.player.inventory.push(null);
+}
+
+function getItemDef(type) {
+  return ITEM_DEFS[type] || { emoji: "❔", name: type, weight: 1, category: "misc" };
+}
+
+function carryingWeight() {
+  return gameState.player.inventory.filter(Boolean).reduce((sum, slot) => sum + (slot.weight || 1), 0);
+}
+
+function hasInventoryType(type) {
+  return gameState.player.inventory.some((slot) => slot && slot.type === type);
+}
+
+function removeInventoryType(type, count = 1) {
+  let left = count;
+  for (let i = 0; i < gameState.player.inventory.length; i++) {
+    if (left <= 0) break;
+    const slot = gameState.player.inventory[i];
+    if (!slot || slot.type !== type) continue;
+    gameState.player.inventory[i] = null;
+    left -= 1;
+  }
+  return left === 0;
+}
+
+function addInventoryItem(type) {
+  const idx = gameState.player.inventory.findIndex((s) => s === null);
+  if (idx === -1) return false;
+  const def = getItemDef(type);
+  const item = { type, emoji: def.emoji, name: def.name, weight: def.weight || 1, category: def.category || "misc" };
+  gameState.player.inventory[idx] = item;
+  reorderInventoryByEquipment();
+  return true;
 }
 
 function addProjectileEffect(fromX, fromY, toX, toY, emoji = "🧊") {
@@ -681,7 +837,8 @@ function ensureInterestingSlices(area, centers, depth) {
     if (!center) continue;
     const spot = nearestFreeFloorTile(area, center.x, center.y) || center;
     if (s % 2 === 0) {
-      addItemSafe(area, depth > 2 ? "F_SMALL" : "H", spot.x, spot.y);
+      const fallback = depth > 2 ? "BERRY" : "FRUIT";
+      addItemSafe(area, fallback, spot.x, spot.y);
     } else {
       spawnEnemyOfType(area, spot.x, spot.y, "penguin", ENEMY_TYPES.penguin.maxHp + depth - 1);
     }
@@ -710,22 +867,23 @@ function placeDungeonContent(area, rooms, roles, depth, template) {
     .slice(0, 2);
   nearStartCenters.forEach((c, i) => {
     const pos = spreadPlacement(c, i);
-    addItemSafe(area, i % 2 === 0 ? "H" : "OXY", pos.x, pos.y);
+    addItemSafe(area, i % 2 === 0 ? "FRUIT" : "BERRY", pos.x, pos.y);
   });
 
   contentCenters.slice(0, 2).forEach((c, i) => {
     const pos = spreadPlacement(c, i + 2);
-    addItemSafe(area, "H", pos.x, pos.y);
+    addItemSafe(area, i % 2 === 0 ? "WOOD" : "VINE", pos.x, pos.y);
   });
   contentCenters.slice(2, 4).forEach((c, i) => {
     const pos = spreadPlacement(c, i + 4);
-    addItemSafe(area, "OXY", pos.x, pos.y);
+    addItemSafe(area, i % 2 === 0 ? "STONE" : "SAP", pos.x, pos.y);
   });
 
   const fishBases = contentCenters.slice(0, 4);
   fishBases.forEach((c, i) => {
     const pos = spreadPlacement(c, i + 1);
-    addItemSafe(area, i % 3 === 0 && depth > 1 ? "F_BIG" : "F_SMALL", pos.x, pos.y);
+    const foodCycle = ["F_SMALL", "F_BIG", "MUSHROOM_UNKNOWN", "HERB"];
+    addItemSafe(area, foodCycle[i % foodCycle.length], pos.x, pos.y);
   });
   if (contentCenters[2]) addItemSafe(area, "TENGU", contentCenters[2].x - 2, contentCenters[2].y + 1);
   if (contentCenters[1]) addItemSafe(area, "MIZU", contentCenters[1].x - 1, contentCenters[1].y + 2);
@@ -1013,8 +1171,12 @@ function startTown() {
   gameState.town.map.playerPos = { x: 17, y: 11 };
   gameState.player.hp = gameState.player.maxHp;
   gameState.player.pp = gameState.player.maxPp;
+  gameState.player.hunger = Math.max(55, gameState.player.hunger);
+  gameState.player.thirst = Math.max(55, gameState.player.thirst);
+  gameState.player.stamina = 100;
   gameState.player.facing = { x: 0, y: 1 };
   gameState.ui.lastDeathReason = "";
+  gameState.ui.minimapExpanded = false;
   gameState.ui.statusOpen = false;
   updateHint();
 }
@@ -1033,6 +1195,9 @@ function startDungeonRun(dungeonId = "urayama") {
   gameState.player.hp = gameState.player.maxHp;
   gameState.player.pp = gameState.player.maxPp;
   gameState.player.oxygen = gameState.player.maxOxygen;
+  gameState.player.hunger = 100;
+  gameState.player.thirst = 100;
+  gameState.player.stamina = 100;
   gameState.player.breathSteps = 0;
   gameState.player.fishThisRun = 0;
   gameState.player.reviveUsed = false;
@@ -1050,6 +1215,11 @@ function startDungeonRun(dungeonId = "urayama") {
       bossDefeated: false,
       trainerRescued: false,
       forestExitReached: false,
+      unidentified: {},
+    },
+    fire: {
+      active: false,
+      duration: 0,
     },
     discovered: {},
     visible: {},
@@ -1058,6 +1228,7 @@ function startDungeonRun(dungeonId = "urayama") {
   };
   gameState.player.facing = { x: 0, y: 1 };
   gameState.ui.statusOpen = false;
+  gameState.ui.minimapExpanded = false;
   gameState.ui.lastDeathReason = "";
   resetLookMode();
   updateFov();
@@ -1219,29 +1390,21 @@ function pickupIfAny(area) {
   const idx = area.items.findIndex((it) => it.x === p.x && it.y === p.y);
   if (idx >= 0) {
     const it = area.items[idx];
-    if (it.type === "F_SMALL" || it.type === "F_BIG") {
-      gameState.player.fishThisRun += it.type === "F_BIG" ? 2 : 1;
-      gameState.mission.retrieved = true;
-      area.items.splice(idx, 1);
-      addLog("魚を捕まえた");
+    const overWeight = carryingWeight() >= CONFIG.carryWeightLimit;
+    if (overWeight) {
+      addLog("重すぎてこれ以上持てない。");
       return;
     }
-    const emptyIdx = gameState.player.inventory.findIndex((s) => s === null);
-    if (emptyIdx === -1) {
+    if (!addInventoryItem(it.type)) {
       addLog("持ち物がいっぱいだ。");
       return;
     }
-    const itemDefs = {
-      H: { emoji: "🌿", name: "薬草" },
-      OXY: { emoji: "🫧", name: "酸素ボンベ" },
-      TENGU: { emoji: "💪", name: "テングのチカラ" },
-      MIZU: { emoji: "💪", name: "みずぐものちから" },
-    };
-    const def = itemDefs[it.type] || { emoji: "❔", name: it.type };
-    gameState.player.inventory[emptyIdx] = { type: it.type, emoji: def.emoji, name: def.name };
-    reorderInventoryByEquipment();
+    if (it.type === "F_SMALL" || it.type === "F_BIG") {
+      gameState.player.fishThisRun += it.type === "F_BIG" ? 2 : 1;
+      gameState.mission.retrieved = true;
+    }
     area.items.splice(idx, 1);
-    addLog("アイテムを拾った。");
+    addLog(`${getItemDef(it.type).name}を拾った。`);
   }
 }
 
@@ -1300,10 +1463,33 @@ function useInventoryItem(index, consumeTurn = true) {
   if (item.type === "H") {
     gameState.player.hp = Math.min(gameState.player.maxHp, gameState.player.hp + 2);
     recoverOxygen(4, "呼吸が落ち着き、酸素が少し回復した。");
+    gameState.player.hunger = Math.min(100, gameState.player.hunger + 8);
     addLog("薬草を使って回復した。");
-  }
-  if (item.type === "OXY") {
+  } else if (item.type === "OXY") {
     recoverOxygen(20, "酸素ボンベを使って酸素を回復した。");
+  } else if (item.type === "FRUIT" || item.type === "BERRY" || item.type === "F_SMALL" || item.type === "F_BIG") {
+    const hungerGain = item.type === "F_BIG" ? 26 : item.type === "F_SMALL" ? 16 : item.type === "FRUIT" ? 12 : 10;
+    const thirstGain = item.type === "BERRY" ? 6 : 2;
+    gameState.player.hunger = Math.min(100, gameState.player.hunger + hungerGain);
+    gameState.player.thirst = Math.min(100, gameState.player.thirst + thirstGain);
+    gameState.player.stamina = Math.min(100, gameState.player.stamina + 12);
+    addLog(`${item.name}を食べた。`);
+  } else if (item.type === "MUSHROOM_UNKNOWN") {
+    const key = "powder_mushroom";
+    if (!gameState.dungeon?.run?.unidentified[key]) {
+      gameState.dungeon.run.unidentified[key] = Math.random() < 0.55 ? "good" : "bad";
+    }
+    if (gameState.dungeon.run.unidentified[key] === "good") {
+      gameState.player.hunger = Math.min(100, gameState.player.hunger + 14);
+      gameState.player.hp = Math.min(gameState.player.maxHp, gameState.player.hp + 1);
+      addLog("粉が出るキノコは食べられると分かった。");
+    } else {
+      gameState.player.hp = Math.max(1, gameState.player.hp - 2);
+      addLog("粉が出るキノコで気分が悪くなった。");
+    }
+  } else if (item.type === "HERB") {
+    gameState.player.thirst = Math.min(100, gameState.player.thirst + 4);
+    addLog("草を噛んで喉を潤した。");
   }
   gameState.player.inventory[index] = null;
   const consumedTurn = consumeTurn && gameState.phase === "playing";
@@ -1332,6 +1518,11 @@ function reorderInventoryByEquipment() {
 function tryMovePlayer(dx, dy) {
   const area = currentArea();
   if (!area) return false;
+  if (gameState.phase === "playing" && gameState.player.stamina <= 0) {
+    addLog("疲労で動けない。休んで体力を戻そう。");
+    endPlayerTurn("exhausted");
+    return false;
+  }
   if (gameState.phase === "playing" && gameState.input.lookMode) resetLookMode();
   const p = area.playerPos;
   const nx = p.x + dx;
@@ -1372,6 +1563,8 @@ function tryMovePlayer(dx, dy) {
   }
 
   if (gameState.phase === "playing") {
+    const moveCost = carryingWeight() > CONFIG.carryWeightLimit ? 6 : 3;
+    gameState.player.stamina = Math.max(0, gameState.player.stamina - moveCost);
     onEnterRoom(area, nx, ny);
     pickupIfAny(area);
     tileEffectOnStep(area);
@@ -1420,6 +1613,59 @@ function performWait() {
   if (gameState.phase !== "playing") return;
   addLog("その場で息を整えた。");
   endPlayerTurn("wait");
+}
+
+function tryStartFire() {
+  if (gameState.phase !== "playing") return;
+  const fire = gameState.dungeon.fire;
+  if (fire.active) {
+    addLog("火はすでに燃えている。");
+    return;
+  }
+  const hasStarter = hasInventoryType("FIRESTARTER");
+  const hasFlint = hasInventoryType("FLINT");
+  const hasTinder = hasInventoryType("TINDER");
+  if (!hasStarter && !(hasFlint && hasTinder)) {
+    addLog("火起こし器か、火打石+ほぐちが必要だ。");
+    return;
+  }
+  fire.active = true;
+  fire.duration = hasStarter ? 8 : 10;
+  if (!hasStarter) removeInventoryType("TINDER", 1);
+  addLog(hasStarter ? "火起こし器で火を起こした。" : "火打石で火を起こした。");
+  endPlayerTurn("fire");
+}
+
+function tryCraft() {
+  if (gameState.phase !== "playing") return;
+  const recipe = CRAFT_RECIPES.find((r) => r.needs.every((type) => hasInventoryType(type)) && (!r.requiresFire || gameState.dungeon.fire.active));
+  if (!recipe) {
+    addLog("作れるものがない。");
+    return;
+  }
+  recipe.needs.forEach((type) => removeInventoryType(type, 1));
+  if (!addInventoryItem(recipe.out)) {
+    addLog("完成したが持ち物に入らない。");
+    return;
+  }
+  addLog(`${recipe.name}をクラフトした。`);
+  endPlayerTurn("craft");
+}
+
+function tryApplyResinMod() {
+  if (gameState.phase !== "playing") return;
+  if (!hasInventoryType("RESIN")) {
+    addLog("樹脂がない。");
+    return;
+  }
+  removeInventoryType("RESIN", 1);
+  const mod = gameState.player.shieldMods.find((m) => m.type === "resin");
+  if (mod) mod.level += 1;
+  else gameState.player.shieldMods.push({ type: "resin", level: 1 });
+  gameState.player.maxHp += 1;
+  gameState.player.stamina = Math.max(30, gameState.player.stamina - 8);
+  addLog("装備に樹脂を塗り、耐久が上がった。");
+  endPlayerTurn("upgrade");
 }
 
 function useSpecial() {
@@ -1602,10 +1848,40 @@ function applyNaturalRecovery(actionType) {
   if (actionType === "wait") recoverOxygen(2, "深呼吸して酸素を回復した。");
 }
 
+function applySurvivalDecay() {
+  if (gameState.phase !== "playing") return;
+  const turn = gameState.dungeon.turn;
+  if (turn % CONFIG.hungerTickTurns === 0) gameState.player.hunger = Math.max(0, gameState.player.hunger - 2);
+  if (turn % CONFIG.thirstTickTurns === 0) gameState.player.thirst = Math.max(0, gameState.player.thirst - 2);
+  gameState.player.stamina = Math.min(100, gameState.player.stamina + CONFIG.staminaRecoverPerTurn);
+  if (carryingWeight() > CONFIG.carryWeightLimit) gameState.player.stamina = Math.max(0, gameState.player.stamina - 3);
+
+  if (gameState.player.hunger <= 0 || gameState.player.thirst <= 0) {
+    gameState.player.hp = Math.max(0, gameState.player.hp - 1);
+    addLog("飢え/渇きでHPが1減った。");
+    if (gameState.player.hp <= 0) {
+      gameState.ui.lastDeathReason = "飢えと渇きで倒れた。";
+      setGameOver(gameState.ui.lastDeathReason);
+      return;
+    }
+  }
+  if (gameState.player.hunger < 25 || gameState.player.thirst < 25) addLog("空腹か渇きが危険域だ。");
+  if (gameState.dungeon.fire.active) {
+    gameState.dungeon.fire.duration -= 1;
+    if (gameState.dungeon.fire.duration <= 0) {
+      gameState.dungeon.fire.active = false;
+      gameState.dungeon.fire.duration = 0;
+      addLog("火が消えた。");
+    }
+  }
+}
+
 function endPlayerTurn(actionType = "") {
   consumeOxygen();
   if (gameState.phase !== "playing") return;
   applyNaturalRecovery(actionType);
+  applySurvivalDecay();
+  if (gameState.phase !== "playing") return;
   enemyTurn();
   if (gameState.phase === "playing") {
     gameState.dungeon.turn += 1;
@@ -1901,6 +2177,15 @@ function update(action, payload = {}) {
     case "TOGGLE_STATUS":
       if (gameState.phase === "town" || gameState.phase === "playing") gameState.ui.statusOpen = !gameState.ui.statusOpen;
       break;
+    case "START_FIRE":
+      tryStartFire();
+      break;
+    case "CRAFT":
+      tryCraft();
+      break;
+    case "UPGRADE_GEAR":
+      tryApplyResinMod();
+      break;
     case "TICK":
       break;
     default:
@@ -1997,9 +2282,8 @@ function tileVisual(area, x, y) {
   if (it) {
     if (it.type === "H") return { type: "heal", symbol: "🌿" };
     if (it.type === "OXY") return { type: "oxygen", symbol: "🫧" };
-    if (it.type === "F_SMALL") return { type: "item", symbol: "🐟" };
-    if (it.type === "F_BIG") return { type: "item", symbol: "🐠" };
-    if (it.type === "TENGU" || it.type === "MIZU") return { type: "item", symbol: "💪" };
+    const def = getItemDef(it.type);
+    return { type: "item", symbol: def.emoji || "📦" };
   }
 
   const obj = objectAt(area, x, y);
@@ -2025,42 +2309,9 @@ function renderEnemyCompact() {
   return `<div class="enemy-compact"><strong>${hover.name}</strong><span>HP ${hover.hp} / ATK ${hover.attack}</span></div>`;
 }
 
-function renderInventoryEntry(slot, idx) {
-  const slotLabel = String(idx + 1).padStart(2, "0");
-  if (!slot) {
-    return `
-      <div class="inventory-entry empty" data-slot-index="${idx}">
-        <span class="slot-index">#${slotLabel}</span>
-        <span class="slot-icon">—</span>
-        <span class="slot-label">空きスロット</span>
-      </div>
-    `;
-  }
-  const equipped = isEquipped(slot.type);
-  return `
-    <button data-slot-index="${idx}" class="inventory-entry" title="アイテムを使う">
-      <span class="slot-index">#${slotLabel}</span>
-      <span class="slot-icon">${slot.emoji || "🎒"}</span>
-      <span class="slot-label">${slot.name}</span>
-      <span class="slot-state">${equipped ? "装備中" : ""}</span>
-    </button>
-  `;
-}
-
+// 互換用: 旧UI経路で renderInventoryBox() が呼ばれても落ちないようにする。
 function renderInventoryBox() {
-  const slots = gameState.player.inventory.slice(0, CONFIG.inventorySlots);
-  while (slots.length < CONFIG.inventorySlots) slots.push(null);
-  const slotsHtml = slots.map((slot, idx) => renderInventoryEntry(slot, idx)).join("");
-  const carryCount = slots.filter(Boolean).length;
-  return `
-    <div class="inventory-box">
-      <div class="inventory-head">
-        <span class="inventory-label">インベントリ</span>
-        <span class="inventory-count">${carryCount}/${CONFIG.inventorySlots}</span>
-      </div>
-      <div class="inventory-list">${slotsHtml}</div>
-    </div>
-  `;
+  return "";
 }
 
 function renderBoardSupport(area, cam, hint) {
@@ -2069,9 +2320,13 @@ function renderBoardSupport(area, cam, hint) {
       ${renderMiniMap(area, cam)}
       ${renderEnemyCompact()}
       <div class="hint-side">${hint || ""}</div>
-      ${renderInventoryBox()}
     </aside>
   `;
+}
+
+// 互換用: 旧テンプレートで呼ばれても落ちないようにする。
+function renderBoardLeftSupport() {
+  return "";
 }
 
 function renderBoardStage(area, cam, hint) {
@@ -2145,7 +2400,9 @@ function renderMiniMap(area, cam) {
       dots += `<span class="mini-dot ${kind}${current}"></span>`;
     }
   }
-  return `<div class="minimap" style="grid-template-columns:repeat(${area.width},5px)">${dots}</div>`;
+  const expandedClass = gameState.ui.minimapExpanded ? " expanded" : "";
+  const hint = gameState.ui.minimapExpanded ? "クリックで元に戻す" : "クリックで拡大";
+  return `<button type="button" data-ui-action="toggle-minimap" class="minimap${expandedClass}" title="${hint}" style="grid-template-columns:repeat(${area.width},5px)">${dots}</button>`;
 }
 
 function renderArea(area, hint, overlays = "") {
@@ -2165,9 +2422,12 @@ function renderHudBar() {
   }
   const hpRatio = Math.max(0, Math.min(1, gameState.player.hp / gameState.player.maxHp));
   const oxygenRatio = Math.max(0, Math.min(1, gameState.player.oxygen / gameState.player.maxOxygen));
+  const hungerRatio = Math.max(0, Math.min(1, gameState.player.hunger / 100));
+  const thirstRatio = Math.max(0, Math.min(1, gameState.player.thirst / 100));
   const hpState = hpRatio > 0.6 ? "safe" : hpRatio > 0.3 ? "mid" : "low";
   const dungeonName = gameState.phase === "playing" ? getDungeonDef(gameState.dungeon?.id).name : "拠点";
   const floorLabel = gameState.phase === "playing" ? `${gameState.dungeon.depth}F` : "-";
+  const fireLabel = gameState.phase === "playing" && gameState.dungeon?.fire?.active ? `🔥${gameState.dungeon.fire.duration}` : "🔥-";
   hudEl.innerHTML = `
     <div class="hud-bar">
       <div class="hud-left">
@@ -2183,8 +2443,16 @@ function renderHudBar() {
           <div class="oxy-bar"><div class="oxy-fill" style="width:${Math.round(oxygenRatio * 100)}%"></div></div>
           <span class="hud-oxy">${gameState.player.oxygen}/${gameState.player.maxOxygen}</span>
         </div>
+        <div class="oxy-wrap">
+          <div class="oxy-bar"><div class="oxy-fill hunger-fill" style="width:${Math.round(hungerRatio * 100)}%"></div></div>
+          <span class="hud-oxy">空腹 ${Math.round(gameState.player.hunger)}</span>
+        </div>
+        <div class="oxy-wrap">
+          <div class="oxy-bar"><div class="oxy-fill thirst-fill" style="width:${Math.round(thirstRatio * 100)}%"></div></div>
+          <span class="hud-oxy">水分 ${Math.round(gameState.player.thirst)}</span>
+        </div>
       </div>
-      <div class="hud-right">💰 ${gameState.player.totalFish}</div>
+      <div class="hud-right">${fireLabel}<br>💰 ${gameState.player.totalFish}</div>
     </div>
   `;
 }
@@ -2213,6 +2481,9 @@ function renderStatusPanel() {
       <div>LV ${gameState.player.level}</div>
       <div>EXP ${gameState.player.exp}/${gameState.player.nextExp}</div>
       <div>Lung ${gameState.player.breathSteps}/${CONFIG.lungCapacity}</div>
+      <div>Stamina ${Math.round(gameState.player.stamina)}</div>
+      <div>Weight ${carryingWeight()}/${CONFIG.carryWeightLimit}</div>
+      <div class="meta">F:火 / K:クラフト / V:強化</div>
       <div class="meta">P: 閉じる</div>
     </div>
   `;
@@ -2247,51 +2518,35 @@ function render() {
 
   if (gameState.phase === "gameover") {
     viewEl.className = "";
-    viewEl.innerHTML = `<div class="field-shell"><h2>ゲームオーバー</h2><p>再挑戦しますか？</p><div class="phase-actions"><button data-action='RESTART'>町へ戻る</button></div></div>`;
+    viewEl.innerHTML = `<div class="field-shell"><h2>ゲームオーバー</h2><p>Rキーで町へ戻る</p><button data-ui-action="restart-run">町へ戻る</button></div>`;
   }
 
   renderMessageBox();
 }
 
-function findInteractiveTarget(e, selector) {
-  const direct = e.target instanceof Element ? e.target.closest(selector) : null;
-  debugUi("click target", {
-    selector,
-    type: e.type,
-    targetTag: e.target && e.target.nodeName ? e.target.nodeName : typeof e.target,
-    hasDirect: !!direct,
-    client: [e.clientX, e.clientY],
-  });
-  if (direct) return direct;
-  if (typeof e.clientX !== "number" || typeof e.clientY !== "number") return null;
-  const stack = document.elementsFromPoint(e.clientX, e.clientY);
-  debugUi(
-    "elementsFromPoint",
-    stack.slice(0, 5).map((el) => {
-      const tag = el.tagName ? el.tagName.toLowerCase() : "unknown";
-      const id = el.id ? `#${el.id}` : "";
-      const cls = el.className ? `.${String(el.className).trim().replace(/\s+/g, ".")}` : "";
-      return `${tag}${id}${cls}`;
-    })
-  );
-  return stack.find((el) => el instanceof HTMLElement && el.matches(selector)) || null;
+function handleUiAction(action) {
+  if (action === "toggle-minimap") {
+    if (gameState.phase !== "playing") return;
+    gameState.ui.minimapExpanded = !gameState.ui.minimapExpanded;
+    render();
+    return;
+  }
+  if (action === "restart-run") {
+    dispatch("RESTART");
+  }
 }
 
-document.addEventListener("click", (e) => {
-  const btn = findInteractiveTarget(e, "button[data-action]");
-  debugUi("action click resolved", { found: !!btn, action: btn?.dataset?.action || null });
-  if (!btn) return;
-  dispatch(btn.dataset.action, { style: btn.dataset.style, dungeon: btn.dataset.dungeon });
-  return true;
-});
-
-document.addEventListener("click", (e) => {
-  const slotBtn = findInteractiveTarget(e, "[data-slot-index]");
-  if (!slotBtn) return;
-  dispatch("USE_ITEM", { index: Number(slotBtn.dataset.slotIndex), consumeTurn: true });
-});
-
 if (viewEl) {
+  viewEl.addEventListener("click", (e) => {
+    debugClickCapture(e);
+    const actionEl = e.target instanceof Element ? e.target.closest("[data-ui-action]") : null;
+    if (!actionEl) return;
+    const action = actionEl.getAttribute("data-ui-action");
+    if (!action) return;
+    e.preventDefault();
+    handleUiAction(action);
+  });
+
   viewEl.addEventListener("mousemove", (e) => {
     if (gameState.phase !== "playing") return;
     const tile = e.target.closest(".tile[data-map-x][data-map-y]");
@@ -2365,6 +2620,22 @@ window.addEventListener("keydown", (e) => {
   if ((e.key === "c" || e.key === "C") && gameState.phase === "playing") {
     e.preventDefault();
     dispatch("TOGGLE_LOOK");
+  }
+  if ((e.key === "f" || e.key === "F") && gameState.phase === "playing") {
+    e.preventDefault();
+    dispatch("START_FIRE");
+  }
+  if ((e.key === "k" || e.key === "K") && gameState.phase === "playing") {
+    e.preventDefault();
+    dispatch("CRAFT");
+  }
+  if ((e.key === "v" || e.key === "V") && gameState.phase === "playing") {
+    e.preventDefault();
+    dispatch("UPGRADE_GEAR");
+  }
+  if ((e.key === "r" || e.key === "R") && gameState.phase === "gameover") {
+    e.preventDefault();
+    dispatch("RESTART");
   }
 });
 
