@@ -223,7 +223,7 @@ body {
   position: relative;
   isolation: isolate;
   display: grid;
-  grid-template-columns: minmax(0, max-content) clamp(260px, 24vw, 300px);
+  grid-template-columns: clamp(220px, 20vw, 280px) minmax(0, max-content) clamp(260px, 24vw, 300px);
   align-content: start;
   justify-content: center;
   align-items: start;
@@ -231,7 +231,7 @@ body {
 }
 
 .stage-main {
-  grid-column: 1;
+  grid-column: 2;
   grid-row: 1;
   position: relative;
   z-index: 1;
@@ -481,6 +481,18 @@ button:hover { background: #4b3f68; }
 .mini-dot.hole { background: #0c0f15; box-shadow: inset 0 0 0 1px #495163; }
 .mini-dot.player { background: #9effba; }
 
+.stage-left-panel {
+  position: absolute;
+  left: -250px;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 220px;
+  z-index: 4;
+  pointer-events: auto;
+}
+
 .stage-corner-panel {
   grid-column: 2;
   grid-row: 1;
@@ -560,7 +572,7 @@ button:hover { background: #4b3f68; }
     --tile-step: 57px;
   }
   .dungeon-stage {
-    grid-template-columns: minmax(0, max-content) 250px;
+    grid-template-columns: 220px minmax(0, max-content) 250px;
     align-content: start;
   }
 }
@@ -578,7 +590,7 @@ button:hover { background: #4b3f68; }
   }
   .dungeon-stage {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto;
+    grid-template-rows: auto auto auto;
     justify-items: stretch;
     align-content: start;
   }
