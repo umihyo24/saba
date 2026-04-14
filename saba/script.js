@@ -327,7 +327,7 @@ const gameState = {
 const TEMP_ALLOW_DIRECT_DUNGEON_START = true;
 const DEBUG_UI = false;
 const DEBUG_FLOW = false;
-const DEBUG_CLICK_CAPTURE = true;
+const DEBUG_CLICK_CAPTURE = false;
 
 const hudEl = document.querySelector("#hud");
 const viewEl = document.querySelector("#view");
@@ -2390,12 +2390,12 @@ function renderBoard(area, cam) {
 }
 
 function renderMiniMap(area, cam) {
-  if (gameState.phase !== "playing") return "";
   let dots = "";
+  const isTown = gameState.phase === "town";
   for (let y = 0; y < area.height; y++) {
     for (let x = 0; x < area.width; x++) {
-      const discovered = isDiscovered(x, y);
       const t = tileAt(area, x, y);
+      const discovered = isTown ? true : isDiscovered(x, y);
       const kind = !discovered ? "unknown" : t === "wall" ? "wall" : t === "water" ? "water" : t === "hole" ? "hole" : "floor";
       const current = x === area.playerPos.x && y === area.playerPos.y ? " player" : "";
       dots += `<span class="mini-dot ${kind}${current}"></span>`;
@@ -2527,7 +2527,6 @@ function render() {
 
 function handleUiAction(action) {
   if (action === "toggle-minimap") {
-    if (gameState.phase !== "playing") return;
     gameState.ui.minimapExpanded = !gameState.ui.minimapExpanded;
     render();
     return;

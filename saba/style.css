@@ -229,7 +229,6 @@ body {
   justify-content: center;
   align-items: start;
   gap: 0.6rem;
-  outline: 1px dashed rgba(80, 180, 220, 0.32); /* debug: stage frame */
 }
 
 .stage-main {
@@ -243,7 +242,6 @@ body {
   border: 1px solid rgba(145, 180, 210, 0.28);
   border-radius: 14px;
   background: linear-gradient(180deg, rgba(10, 24, 35, 0.88), rgba(6, 18, 28, 0.96));
-  outline: 2px solid lime; /* debug: board layer */
 }
 
 .board-pane {
@@ -459,7 +457,6 @@ button:hover { background: #4b3f68; }
   gap: 6px;
   z-index: 5;
   pointer-events: auto;
-  outline: 2px solid cyan; /* debug: overlay hit area */
 }
 
 .minimap {
@@ -475,7 +472,7 @@ button:hover { background: #4b3f68; }
   border-radius: 6px;
   cursor: zoom-in;
   line-height: 0;
-  pointer-events: none !important;
+  pointer-events: auto;
 }
 
 .minimap.expanded {
@@ -488,7 +485,7 @@ button:hover { background: #4b3f68; }
   border-color: rgba(160, 210, 240, 0.7);
   background: rgba(6, 18, 28, 0.95);
   cursor: zoom-out;
-  pointer-events: none !important;
+  pointer-events: auto;
 }
 
 .minimap:hover {
@@ -522,8 +519,8 @@ button:hover { background: #4b3f68; }
 }
 
 .stage-corner-panel {
-  grid-column: 3;
-  grid-row: 1;
+  grid-column: 3 !important;
+  grid-row: 1 !important;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -533,12 +530,10 @@ button:hover { background: #4b3f68; }
   z-index: 4;
   pointer-events: auto;
   overflow: hidden;
-  outline: 2px solid red; /* debug: side panel layer */
 }
 
 .stage-left-panel {
   display: none;
-  outline: 2px solid yellow; /* debug: disabled stale layer */
 }
 
 .enemy-compact {
@@ -568,7 +563,6 @@ button:hover { background: #4b3f68; }
   /* Hidden by default: do not steal clicks unless explicitly opened with .is-open */
   pointer-events: none;
   opacity: 0;
-  outline: 2px solid magenta; /* debug: modal layer */
 }
 
 .modal-backdrop.is-open {
