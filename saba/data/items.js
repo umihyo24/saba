@@ -1,0 +1,30 @@
+export const ITEM_DEFS = {
+  H: { emoji: "🌿", name: "薬草", weight: 1, category: "food" },
+  OXY: { emoji: "🫧", name: "酸素ボンベ", weight: 2, category: "tool" },
+  F_SMALL: { emoji: "🐟", name: "小魚", weight: 1, category: "food" },
+  F_BIG: { emoji: "🐠", name: "大魚", weight: 2, category: "food" },
+  TENGU: { emoji: "💪", name: "テングのチカラ", weight: 2, category: "tool" },
+  MIZU: { emoji: "💪", name: "みずぐものちから", weight: 2, category: "tool" },
+  FRUIT: { emoji: "🍎", name: "果実", weight: 1, category: "food" },
+  BERRY: { emoji: "🫐", name: "きのみ", weight: 1, category: "food" },
+  MUSHROOM_UNKNOWN: { emoji: "🍄", name: "粉が出るキノコ", weight: 1, category: "food" },
+  HERB: { emoji: "🌱", name: "草", weight: 1, category: "food" },
+  WOOD: { emoji: "🪵", name: "木材", weight: 2, category: "material" },
+  VINE: { emoji: "🪢", name: "つた", weight: 1, category: "material" },
+  STONE: { emoji: "🪨", name: "石", weight: 2, category: "material" },
+  BONE: { emoji: "🦴", name: "骨", weight: 1, category: "material" },
+  HIDE: { emoji: "🧥", name: "皮", weight: 2, category: "material" },
+  SAP: { emoji: "💧", name: "樹液", weight: 1, category: "material" },
+  RESIN: { emoji: "🧪", name: "樹脂", weight: 1, category: "material" },
+  TINDER: { emoji: "🪹", name: "ほぐち", weight: 1, category: "tool" },
+  FIRESTARTER: { emoji: "🔥", name: "火起こし器", weight: 2, category: "tool" },
+  FLINT: { emoji: "✨", name: "火打石", weight: 1, category: "tool" },
+  KNIFE: { emoji: "🔪", name: "ナイフ", weight: 1, category: "tool" },
+  WHIP: { emoji: "🪢", name: "ムチ", weight: 2, category: "tool" },
+};
+
+export const CRAFT_RECIPES = [
+  { out: "WHIP", name: "ムチ", needs: ["WOOD", "VINE"] },
+  { out: "TINDER", name: "ほぐち", needs: ["HERB"] },
+  { out: "RESIN", name: "樹脂", needs: ["SAP"], requiresFire: true },
+];
